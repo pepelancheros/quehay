@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { createPantry, joinPantry } from '../lib/pantry'
 
 export default function Register() {
   const navigate = useNavigate()
@@ -15,18 +16,27 @@ export default function Register() {
     setError(null)
     setLoading(true)
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { invite_code: inviteCode },
-      },
-    })
+    // 1. Crear usuario en Supabase Auth
+    const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
+    if (signUpError) {
+      setError(signUpError.message)
+      setLoading(false)
+      return
+    }
 
-    if (error) {
-      setError(error.message)
-    } else {
+    const userId = data.user.id
+
+    try {
+      if (inviteCode.trim()) {
+        // 2a. Si hay código, unirse a la despensa existente
+        await joinPantry(inviteCode.trim(), userId)
+      } else {
+        // 2b. Si no hay código, crear una despensa nueva
+        await createPantry(userId)
+      }
       navigate('/')
+    } catch (err) {
+      setError(err.message === 'Código inválido' ? 'El código de despensa no existe.' : err.message)
     }
 
     setLoading(false)
