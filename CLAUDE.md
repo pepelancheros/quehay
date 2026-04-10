@@ -21,7 +21,7 @@ App personal para 2 personas que comparten despensa y reciben sugerencias de rec
 
 - [x] **Fase 1** — Proyecto base: Vite + React + Tailwind + Supabase conectado + login/registro + deploy en Vercel ✓ (repo: pepelancheros/quehay, deployado en Vercel)
 - [ ] **Fase 2** — Despensa compartida: CRUD de ingredientes, vincular usuarios por invite code
-- [ ] **Fase 3** — Sugerencias de recetas con OpenAI (incluyendo recetas con 1-3 ingredientes faltantes)
+- [x] **Fase 3** — Sugerencias de recetas con OpenAI (incluyendo recetas con 1-3 ingredientes faltantes)
 - [ ] **Fase 4** — Pulido UX: lista de compras, historial, filtros
 - [ ] **Fase 5** — Extras: contexto de país, dificultad, soporte para más de 2 usuarios
 
