@@ -21,11 +21,14 @@ export async function joinPantry(inviteCode, userId) {
 
 // Obtiene la despensa del usuario actual (id + invite_code)
 export async function getUserPantry() {
-  const { data: member, error: memberError } = await supabase
+  const { data: members, error: memberError } = await supabase
     .from('pantry_members')
     .select('pantry_id')
-    .single()
+    .limit(1)
   if (memberError) throw memberError
+  if (!members || members.length === 0) throw new Error('Sin despensa')
+
+  const member = members[0]
 
   const { data: pantry, error: pantryError } = await supabase
     .from('pantries')

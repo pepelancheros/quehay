@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { getUserPantry, getPantryItems, addPantryItem, deletePantryItem } from '../lib/pantry'
+import { getUserPantry, getPantryItems, addPantryItem, deletePantryItem, createPantry, joinPantry } from '../lib/pantry'
 
 export default function Home() {
   const [pantry, setPantry] = useState(null)
+  const [noPantry, setNoPantry] = useState(false) // usuario sin despensa
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -13,6 +14,11 @@ export default function Home() {
   const [quantity, setQuantity] = useState('')
   const [unit, setUnit] = useState('')
   const [adding, setAdding] = useState(false)
+
+  // Formulario unirse/crear despensa
+  const [inviteCode, setInviteCode] = useState('')
+  const [joiningOrCreating, setJoiningOrCreating] = useState(false)
+  const [setupError, setSetupError] = useState(null)
 
   useEffect(() => {
     let attempts = 0
@@ -30,13 +36,51 @@ export default function Home() {
           attempts++
           setTimeout(load, 600)
         } else {
-          setError(err.message)
+          // Después de reintentos, asumimos que el usuario no tiene despensa
+          setNoPantry(true)
           setLoading(false)
         }
       }
     }
     load()
   }, [])
+
+  async function handleCreatePantry() {
+    setJoiningOrCreating(true)
+    setSetupError(null)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      await createPantry(user.id)
+      const p = await getUserPantry()
+      setPantry(p)
+      setNoPantry(false)
+    } catch (err) {
+      setSetupError(err.message)
+    } finally {
+      setJoiningOrCreating(false)
+    }
+  }
+
+  async function handleJoinPantry(e) {
+    e.preventDefault()
+    if (!inviteCode.trim()) return
+    setJoiningOrCreating(true)
+    setSetupError(null)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      await joinPantry(inviteCode.trim(), user.id)
+      const p = await getUserPantry()
+      const i = await getPantryItems(p.id)
+      setPantry(p)
+      setItems(i)
+      setNoPantry(false)
+      setInviteCode('')
+    } catch (err) {
+      setSetupError(err.message === 'Código inválido' ? 'El código de despensa no existe.' : err.message)
+    } finally {
+      setJoiningOrCreating(false)
+    }
+  }
 
   async function handleAdd(e) {
     e.preventDefault()
@@ -71,6 +115,56 @@ export default function Home() {
   if (loading) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <p className="text-gray-400 text-sm">Cargando despensa...</p>
+    </div>
+  )
+
+  // Usuario sin despensa — mostrar opciones para crear o unirse
+  if (noPantry) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">¿Qué hay?</h1>
+          <button onClick={handleLogout} className="text-sm text-gray-400 hover:text-gray-600">Salir</button>
+        </div>
+        <p className="text-gray-500 text-sm mb-6">Todavía no tenés una despensa. Podés crear una nueva o unirte a una existente.</p>
+
+        {setupError && (
+          <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg mb-4">{setupError}</p>
+        )}
+
+        {/* Unirse con código */}
+        <form onSubmit={handleJoinPantry} className="flex flex-col gap-2 mb-4">
+          <input
+            type="text"
+            value={inviteCode}
+            onChange={(e) => setInviteCode(e.target.value)}
+            placeholder="Ingresá el código de despensa"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          />
+          <button
+            type="submit"
+            disabled={joiningOrCreating || !inviteCode.trim()}
+            className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-medium py-2 rounded-lg text-sm transition-colors"
+          >
+            {joiningOrCreating ? 'Uniéndose...' : 'Unirme a una despensa'}
+          </button>
+        </form>
+
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex-1 h-px bg-gray-100" />
+          <span className="text-xs text-gray-400">o</span>
+          <div className="flex-1 h-px bg-gray-100" />
+        </div>
+
+        {/* Crear nueva */}
+        <button
+          onClick={handleCreatePantry}
+          disabled={joiningOrCreating}
+          className="w-full border border-gray-200 hover:border-gray-300 disabled:opacity-50 text-gray-700 font-medium py-2 rounded-lg text-sm transition-colors"
+        >
+          {joiningOrCreating ? 'Creando...' : 'Crear despensa nueva'}
+        </button>
+      </div>
     </div>
   )
 
@@ -142,6 +236,32 @@ export default function Home() {
             </button>
           </div>
         </form>
+
+        {/* Unirse a otra despensa — solo visible cuando la despensa está vacía */}
+        {items.length === 0 && (
+          <form onSubmit={handleJoinPantry} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6">
+            <p className="text-sm font-medium text-gray-700 mb-3">Unirme a otra despensa</p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value)}
+                placeholder="Código de despensa"
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+              <button
+                type="submit"
+                disabled={joiningOrCreating || !inviteCode.trim()}
+                className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-medium px-4 rounded-lg text-sm transition-colors"
+              >
+                {joiningOrCreating ? '...' : 'Unirme'}
+              </button>
+            </div>
+            {setupError && (
+              <p className="text-sm text-red-500 mt-2">{setupError}</p>
+            )}
+          </form>
+        )}
 
         {/* Lista de ingredientes */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
