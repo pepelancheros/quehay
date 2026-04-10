@@ -4,7 +4,7 @@ import { getUserPantry, getPantryItems, addPantryItem, deletePantryItem, createP
 
 export default function Home() {
   const [pantry, setPantry] = useState(null)
-  const [noPantry, setNoPantry] = useState(false) // usuario sin despensa
+  const [noPantry, setNoPantry] = useState(false)
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -20,6 +20,11 @@ export default function Home() {
   const [joiningOrCreating, setJoiningOrCreating] = useState(false)
   const [setupError, setSetupError] = useState(null)
 
+  // Recetas
+  const [recipes, setRecipes] = useState([])
+  const [loadingRecipes, setLoadingRecipes] = useState(false)
+  const [recipesError, setRecipesError] = useState(null)
+
   useEffect(() => {
     let attempts = 0
 
@@ -31,12 +36,10 @@ export default function Home() {
         setItems(i)
         setLoading(false)
       } catch (err) {
-        // Reintenta hasta 5 veces con 600ms de espera (race condition al registrarse)
         if (attempts < 5) {
           attempts++
           setTimeout(load, 600)
         } else {
-          // Después de reintentos, asumimos que el usuario no tiene despensa
           setNoPantry(true)
           setLoading(false)
         }
@@ -103,8 +106,29 @@ export default function Home() {
     try {
       await deletePantryItem(itemId)
       setItems((prev) => prev.filter((i) => i.id !== itemId))
+      setRecipes([])
     } catch (err) {
       setError(err.message)
+    }
+  }
+
+  async function handleGetRecipes() {
+    setLoadingRecipes(true)
+    setRecipesError(null)
+    setRecipes([])
+    try {
+      const res = await fetch('/api/recipes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ingredients: items }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error generando recetas')
+      setRecipes(data.recipes || [])
+    } catch (err) {
+      setRecipesError(err.message)
+    } finally {
+      setLoadingRecipes(false)
     }
   }
 
@@ -118,7 +142,6 @@ export default function Home() {
     </div>
   )
 
-  // Usuario sin despensa — mostrar opciones para crear o unirse
   if (noPantry) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
@@ -132,7 +155,6 @@ export default function Home() {
           <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg mb-4">{setupError}</p>
         )}
 
-        {/* Unirse con código */}
         <form onSubmit={handleJoinPantry} className="flex flex-col gap-2 mb-4">
           <input
             type="text"
@@ -156,7 +178,6 @@ export default function Home() {
           <div className="flex-1 h-px bg-gray-100" />
         </div>
 
-        {/* Crear nueva */}
         <button
           onClick={handleCreatePantry}
           disabled={joiningOrCreating}
@@ -175,10 +196,7 @@ export default function Home() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900">¿Qué hay?</h1>
-          <button
-            onClick={handleLogout}
-            className="text-sm text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={handleLogout} className="text-sm text-gray-400 hover:text-gray-600">
             Salir
           </button>
         </div>
@@ -264,7 +282,7 @@ export default function Home() {
         )}
 
         {/* Lista de ingredientes */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50 mb-6">
           {items.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-8">La despensa está vacía</p>
           ) : (
@@ -288,6 +306,62 @@ export default function Home() {
             ))
           )}
         </div>
+
+        {/* Botón sugerir recetas */}
+        {items.length > 0 && (
+          <button
+            onClick={handleGetRecipes}
+            disabled={loadingRecipes}
+            className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-medium py-3 rounded-2xl text-sm transition-colors mb-6"
+          >
+            {loadingRecipes ? 'Generando recetas...' : '¿Qué puedo cocinar?'}
+          </button>
+        )}
+
+        {recipesError && (
+          <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg mb-4">{recipesError}</p>
+        )}
+
+        {/* Recetas sugeridas */}
+        {recipes.length > 0 && (
+          <div className="flex flex-col gap-4">
+            <p className="text-sm font-medium text-gray-700">Recetas sugeridas</p>
+            {recipes.map((recipe, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                <p className="font-semibold text-gray-900 mb-3">{recipe.name}</p>
+
+                <div className="mb-3">
+                  <p className="text-xs font-medium text-green-700 mb-1">Tenés</p>
+                  <div className="flex flex-wrap gap-1">
+                    {recipe.have.map((ing, j) => (
+                      <span key={j} className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">{ing}</span>
+                    ))}
+                  </div>
+                </div>
+
+                {recipe.missing.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-xs font-medium text-amber-600 mb-1">Te falta</p>
+                    <div className="flex flex-wrap gap-1">
+                      {recipe.missing.map((ing, j) => (
+                        <span key={j} className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">{ing}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-1">Pasos</p>
+                  <ol className="flex flex-col gap-1">
+                    {recipe.steps.map((step, j) => (
+                      <li key={j} className="text-xs text-gray-600">{j + 1}. {step}</li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
       </div>
     </div>
