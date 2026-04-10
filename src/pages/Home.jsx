@@ -15,16 +15,24 @@ export default function Home() {
   const [adding, setAdding] = useState(false)
 
   useEffect(() => {
+    let attempts = 0
+
     async function load() {
       try {
         const p = await getUserPantry()
         setPantry(p)
         const i = await getPantryItems(p.id)
         setItems(i)
-      } catch (err) {
-        setError(err.message)
-      } finally {
         setLoading(false)
+      } catch (err) {
+        // Reintenta hasta 5 veces con 600ms de espera (race condition al registrarse)
+        if (attempts < 5) {
+          attempts++
+          setTimeout(load, 600)
+        } else {
+          setError(err.message)
+          setLoading(false)
+        }
       }
     }
     load()
