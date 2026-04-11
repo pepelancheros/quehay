@@ -203,7 +203,7 @@ export default function Home() {
     recognition.start()
   }
 
-  async function handleGetRecipes() {
+  async function handleGetRecipes(exclude = []) {
     setLoadingRecipes(true)
     setRecipesError(null)
     setRecipes([])
@@ -211,7 +211,7 @@ export default function Home() {
       const res = await fetch('/api/recipes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ingredients: items, mealType }),
+        body: JSON.stringify({ ingredients: items, mealType, excludeRecipes: exclude }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error generando recetas')
@@ -469,7 +469,7 @@ export default function Home() {
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-gray-700">Recetas sugeridas</p>
               <button
-                onClick={handleGetRecipes}
+                onClick={() => handleGetRecipes(recipes.map((r) => r.name))}
                 disabled={loadingRecipes}
                 className="text-xs text-green-600 hover:text-green-700 disabled:opacity-50 transition-colors"
               >
