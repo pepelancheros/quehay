@@ -28,6 +28,7 @@ export default function Home() {
   const [dictationError, setDictationError] = useState(null)
   const recognitionRef = useRef(null)
   const transcriptRef = useRef('')
+  const manualStopRef = useRef(false)
 
   // Recetas
   const [recipes, setRecipes] = useState([])
@@ -147,8 +148,9 @@ export default function Home() {
   }
 
   function handleDictate() {
-    // Si está grabando, parar y procesar
+    // Si está grabando, parar manualmente y procesar
     if (listening) {
+      manualStopRef.current = true
       recognitionRef.current?.stop()
       return
     }
@@ -165,6 +167,7 @@ export default function Home() {
     recognition.continuous = true
     recognitionRef.current = recognition
     transcriptRef.current = ''
+    manualStopRef.current = false
 
     recognition.onstart = () => {
       setListening(true)
@@ -180,6 +183,11 @@ export default function Home() {
     }
 
     recognition.onend = () => {
+      if (!manualStopRef.current) {
+        // El browser paró solo (mobile) — reiniciar para seguir grabando
+        try { recognition.start() } catch {}
+        return
+      }
       setListening(false)
       processTranscript(transcriptRef.current.trim())
       transcriptRef.current = ''
