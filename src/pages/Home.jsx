@@ -573,7 +573,7 @@ export default function Home() {
                         onClick={() => handleAddToShoppingList(recipe.missing)}
                         className="text-xs text-amber-600 hover:text-amber-700 transition-colors"
                       >
-                        + Lista de compras
+                        + Añadir a lista de compras
                       </button>
                     </div>
                     <div className="flex flex-wrap gap-1">
