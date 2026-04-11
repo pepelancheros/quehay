@@ -20,6 +20,9 @@ export default function Home() {
   const [joiningOrCreating, setJoiningOrCreating] = useState(false)
   const [setupError, setSetupError] = useState(null)
 
+  // Código de despensa minimizado
+  const [codeVisible, setCodeVisible] = useState(true)
+
   // Recetas
   const [recipes, setRecipes] = useState([])
   const [loadingRecipes, setLoadingRecipes] = useState(false)
@@ -203,12 +206,20 @@ export default function Home() {
 
         {/* Invite code */}
         {pantry && (
-          <div className="bg-green-50 border border-green-100 rounded-xl px-4 py-3 mb-6 flex items-center justify-between">
-            <div>
+          <div className="bg-green-50 border border-green-100 rounded-xl px-4 py-3 mb-6">
+            <button
+              onClick={() => setCodeVisible((v) => !v)}
+              className="w-full flex items-center justify-between"
+            >
               <p className="text-xs text-green-700 font-medium">Código de tu despensa</p>
-              <p className="text-lg font-mono font-bold text-green-800 tracking-widest">{pantry.inviteCode}</p>
-            </div>
-            <p className="text-xs text-green-600 text-right max-w-[140px]">Compartilo para que otro usuario se una</p>
+              <span className={`text-green-600 text-xl inline-block transition-transform ${codeVisible ? '-rotate-90' : 'rotate-90'}`}>›</span>
+            </button>
+            {codeVisible && (
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-lg font-mono font-bold text-green-800 tracking-widest">{pantry.inviteCode}</p>
+                <p className="text-xs text-green-600 text-right max-w-[140px]">Compartilo para que otro usuario se una</p>
+              </div>
+            )}
           </div>
         )}
 
