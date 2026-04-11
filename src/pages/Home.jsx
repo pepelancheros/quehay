@@ -203,11 +203,12 @@ export default function Home() {
     recognition.start()
   }
 
-  async function handleGetRecipes(exclude = []) {
+  async function handleGetRecipes({ append = false } = {}) {
     setLoadingRecipes(true)
     setRecipesError(null)
-    setRecipes([])
+    if (!append) setRecipes([])
     try {
+      const exclude = append ? recipes.map((r) => r.name) : []
       const res = await fetch('/api/recipes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -215,7 +216,8 @@ export default function Home() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error generando recetas')
-      setRecipes(data.recipes || [])
+      const newRecipes = data.recipes || []
+      setRecipes((prev) => append ? [...newRecipes, ...prev] : newRecipes)
     } catch (err) {
       setRecipesError(err.message)
     } finally {
@@ -469,11 +471,11 @@ export default function Home() {
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-gray-700">Recetas sugeridas</p>
               <button
-                onClick={() => handleGetRecipes(recipes.map((r) => r.name))}
+                onClick={() => handleGetRecipes({ append: true })}
                 disabled={loadingRecipes}
                 className="text-xs text-green-600 hover:text-green-700 disabled:opacity-50 transition-colors"
               >
-                🔄 Otras opciones
+                + Más opciones
               </button>
             </div>
             {recipes.map((recipe, i) => (
