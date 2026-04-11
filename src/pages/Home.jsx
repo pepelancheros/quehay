@@ -450,7 +450,7 @@ export default function Home() {
               ))}
             </div>
             <button
-              onClick={handleGetRecipes}
+              onClick={() => handleGetRecipes()}
               disabled={loadingRecipes}
               className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-medium py-3 rounded-2xl text-sm transition-colors"
             >
