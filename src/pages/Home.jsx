@@ -34,6 +34,7 @@ export default function Home() {
   const [recipes, setRecipes] = useState([])
   const [loadingRecipes, setLoadingRecipes] = useState(false)
   const [recipesError, setRecipesError] = useState(null)
+  const [mealType, setMealType] = useState('cualquiera')
 
   // Favoritos
   const [favorites, setFavorites] = useState([])
@@ -210,7 +211,7 @@ export default function Home() {
       const res = await fetch('/api/recipes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ingredients: items }),
+        body: JSON.stringify({ ingredients: items, mealType }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error generando recetas')
@@ -433,15 +434,29 @@ export default function Home() {
           )}
         </div>
 
-        {/* Botón sugerir recetas */}
+        {/* Filtros + botón sugerir recetas */}
         {items.length > 0 && (
-          <button
-            onClick={handleGetRecipes}
-            disabled={loadingRecipes}
-            className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-medium py-3 rounded-2xl text-sm transition-colors mb-6"
-          >
-            {loadingRecipes ? 'Generando recetas...' : '¿Qué puedo cocinar?'}
-          </button>
+          <div className="mb-6">
+            <div className="flex flex-wrap gap-2 mb-3">
+              {['cualquiera', 'desayuno', 'almuerzo', 'cena', 'ensalada'].map((tipo) => (
+                <button
+                  key={tipo}
+                  type="button"
+                  onClick={() => setMealType(tipo)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors capitalize ${mealType === tipo ? 'bg-green-600 text-white border-green-600' : 'border-gray-200 text-gray-500 hover:border-green-300 hover:text-green-600'}`}
+                >
+                  {tipo}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={handleGetRecipes}
+              disabled={loadingRecipes}
+              className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-medium py-3 rounded-2xl text-sm transition-colors"
+            >
+              {loadingRecipes ? 'Generando recetas...' : '¿Qué puedo cocinar?'}
+            </button>
+          </div>
         )}
 
         {recipesError && (
@@ -451,7 +466,16 @@ export default function Home() {
         {/* Recetas sugeridas */}
         {recipes.length > 0 && (
           <div className="flex flex-col gap-4 mb-8">
-            <p className="text-sm font-medium text-gray-700">Recetas sugeridas</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-gray-700">Recetas sugeridas</p>
+              <button
+                onClick={handleGetRecipes}
+                disabled={loadingRecipes}
+                className="text-xs text-green-600 hover:text-green-700 disabled:opacity-50 transition-colors"
+              >
+                🔄 Otras opciones
+              </button>
+            </div>
             {recipes.map((recipe, i) => (
               <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
                 <div className="flex items-start justify-between mb-3">
