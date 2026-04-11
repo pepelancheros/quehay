@@ -73,3 +73,40 @@ export async function deletePantryItem(itemId) {
     .eq('id', itemId)
   if (error) throw error
 }
+
+// Obtiene las recetas favoritas del usuario
+export async function getFavoriteRecipes() {
+  const { data, error } = await supabase
+    .from('favorite_recipes')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+// Guarda una receta como favorita
+export async function addFavoriteRecipe(recipe) {
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data, error } = await supabase
+    .from('favorite_recipes')
+    .insert({
+      user_id: user.id,
+      name: recipe.name,
+      have: recipe.have,
+      missing: recipe.missing,
+      steps: recipe.steps,
+    })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+// Elimina una receta de favoritos
+export async function removeFavoriteRecipe(id) {
+  const { error } = await supabase
+    .from('favorite_recipes')
+    .delete()
+    .eq('id', id)
+  if (error) throw error
+}

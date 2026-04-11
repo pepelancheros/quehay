@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { getUserPantry, getPantryItems, addPantryItem, deletePantryItem, createPantry, joinPantry } from '../lib/pantry'
+import { getUserPantry, getPantryItems, addPantryItem, deletePantryItem, createPantry, joinPantry, getFavoriteRecipes, addFavoriteRecipe, removeFavoriteRecipe } from '../lib/pantry'
 
 export default function Home() {
   const [pantry, setPantry] = useState(null)
@@ -28,6 +28,10 @@ export default function Home() {
   const [loadingRecipes, setLoadingRecipes] = useState(false)
   const [recipesError, setRecipesError] = useState(null)
 
+  // Favoritos
+  const [favorites, setFavorites] = useState([])
+  const [showFavorites, setShowFavorites] = useState(false)
+
   useEffect(() => {
     let attempts = 0
 
@@ -37,6 +41,8 @@ export default function Home() {
         setPantry(p)
         const i = await getPantryItems(p.id)
         setItems(i)
+        const f = await getFavoriteRecipes()
+        setFavorites(f)
         setLoading(false)
       } catch (err) {
         if (attempts < 5) {
@@ -133,6 +139,21 @@ export default function Home() {
     } finally {
       setLoadingRecipes(false)
     }
+  }
+
+  async function handleToggleFavorite(recipe) {
+    const existing = favorites.find((f) => f.name === recipe.name)
+    if (existing) {
+      await removeFavoriteRecipe(existing.id)
+      setFavorites((prev) => prev.filter((f) => f.id !== existing.id))
+    } else {
+      const saved = await addFavoriteRecipe(recipe)
+      setFavorites((prev) => [saved, ...prev])
+    }
+  }
+
+  function isFavorite(recipeName) {
+    return favorites.some((f) => f.name === recipeName)
   }
 
   async function handleLogout() {
@@ -335,11 +356,76 @@ export default function Home() {
 
         {/* Recetas sugeridas */}
         {recipes.length > 0 && (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 mb-8">
             <p className="text-sm font-medium text-gray-700">Recetas sugeridas</p>
             {recipes.map((recipe, i) => (
               <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-                <p className="font-semibold text-gray-900 mb-3">{recipe.name}</p>
+                <div className="flex items-start justify-between mb-3">
+                  <p className="font-semibold text-gray-900">{recipe.name}</p>
+                  <button
+                    onClick={() => handleToggleFavorite(recipe)}
+                    className="text-xl leading-none ml-2 shrink-0"
+                    title={isFavorite(recipe.name) ? 'Quitar de favoritos' : 'Guardar en favoritos'}
+                  >
+                    {isFavorite(recipe.name) ? '★' : '☆'}
+                  </button>
+                </div>
+
+                <div className="mb-3">
+                  <p className="text-xs font-medium text-green-700 mb-1">Tenés</p>
+                  <div className="flex flex-wrap gap-1">
+                    {recipe.have.map((ing, j) => (
+                      <span key={j} className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">{ing}</span>
+                    ))}
+                  </div>
+                </div>
+
+                {recipe.missing.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-xs font-medium text-amber-600 mb-1">Te falta</p>
+                    <div className="flex flex-wrap gap-1">
+                      {recipe.missing.map((ing, j) => (
+                        <span key={j} className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">{ing}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-1">Pasos</p>
+                  <ol className="flex flex-col gap-1">
+                    {recipe.steps.map((step, j) => (
+                      <li key={j} className="text-xs text-gray-600">{j + 1}. {step}</li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Recetas favoritas */}
+        {favorites.length > 0 && (
+          <div className="flex flex-col gap-4">
+            <button
+              onClick={() => setShowFavorites((v) => !v)}
+              className="flex items-center justify-between"
+            >
+              <p className="text-sm font-medium text-gray-700">Favoritos ({favorites.length})</p>
+              <span className={`text-gray-400 text-xl inline-block transition-transform ${showFavorites ? '-rotate-90' : 'rotate-90'}`}>›</span>
+            </button>
+            {showFavorites && favorites.map((recipe) => (
+              <div key={recipe.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <p className="font-semibold text-gray-900">{recipe.name}</p>
+                  <button
+                    onClick={() => removeFavoriteRecipe(recipe.id).then(() => setFavorites((prev) => prev.filter((f) => f.id !== recipe.id)))}
+                    className="text-xl leading-none ml-2 shrink-0 text-yellow-400"
+                    title="Quitar de favoritos"
+                  >
+                    ★
+                  </button>
+                </div>
 
                 <div className="mb-3">
                   <p className="text-xs font-medium text-green-700 mb-1">Tenés</p>
