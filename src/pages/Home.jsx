@@ -43,6 +43,7 @@ export default function Home() {
   // Lista de compras
   const [shoppingList, setShoppingList] = useState([])
   const [showShopping, setShowShopping] = useState(true)
+  const [shoppingInput, setShoppingInput] = useState('')
 
   useEffect(() => {
     let attempts = 0
@@ -280,6 +281,18 @@ export default function Home() {
     try {
       await deleteShoppingItem(itemId)
       setShoppingList((prev) => prev.filter((i) => i.id !== itemId))
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  async function handleAddShoppingManual(e) {
+    e.preventDefault()
+    if (!shoppingInput.trim()) return
+    try {
+      const added = await addShoppingItems(pantry.id, [shoppingInput.trim()])
+      setShoppingList((prev) => [...prev, ...added])
+      setShoppingInput('')
     } catch (err) {
       setError(err.message)
     }
@@ -654,7 +667,7 @@ export default function Home() {
         )}
 
         {/* Lista de compras */}
-        {shoppingList.length > 0 && (
+        {pantry && (
           <div className="flex flex-col gap-4 mt-6">
             <div className="flex items-center justify-between">
               <button
@@ -694,6 +707,22 @@ export default function Home() {
                     </button>
                   </div>
                 ))}
+                <form onSubmit={handleAddShoppingManual} className="flex gap-2 px-4 py-3">
+                  <input
+                    type="text"
+                    value={shoppingInput}
+                    onChange={(e) => setShoppingInput(e.target.value)}
+                    placeholder="Añadir ítem..."
+                    className="flex-1 text-sm outline-none text-gray-700 placeholder-gray-300"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!shoppingInput.trim()}
+                    className="text-green-600 hover:text-green-700 disabled:opacity-30 text-sm font-medium transition-colors"
+                  >
+                    Añadir
+                  </button>
+                </form>
               </div>
             )}
           </div>
