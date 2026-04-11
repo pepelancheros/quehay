@@ -23,6 +23,10 @@ export default function Home() {
   // Código de despensa minimizado
   const [codeVisible, setCodeVisible] = useState(true)
 
+  // Dictado de voz
+  const [listening, setListening] = useState(false)
+  const [dictationError, setDictationError] = useState(null)
+
   // Recetas
   const [recipes, setRecipes] = useState([])
   const [loadingRecipes, setLoadingRecipes] = useState(false)
@@ -119,6 +123,51 @@ export default function Home() {
     } catch (err) {
       setError(err.message)
     }
+  }
+
+  function handleDictate() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      setDictationError('Tu navegador no soporta dictado de voz.')
+      return
+    }
+
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'es-ES'
+    recognition.interimResults = false
+
+    recognition.onstart = () => {
+      setListening(true)
+      setDictationError(null)
+    }
+
+    recognition.onend = () => setListening(false)
+
+    recognition.onerror = () => {
+      setListening(false)
+      setDictationError('No se pudo capturar el audio. Intentá de nuevo.')
+    }
+
+    recognition.onresult = async (e) => {
+      const text = e.results[0][0].transcript
+      try {
+        const res = await fetch('/api/parse-ingredients', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error)
+        for (const ing of data.ingredients) {
+          const item = await addPantryItem(pantry.id, ing.name, ing.quantity, ing.unit)
+          setItems((prev) => [...prev, item])
+        }
+      } catch (err) {
+        setDictationError(err.message || 'Error procesando el dictado.')
+      }
+    }
+
+    recognition.start()
   }
 
   async function handleGetRecipes() {
@@ -250,7 +299,21 @@ export default function Home() {
 
         {/* Formulario agregar */}
         <form onSubmit={handleAdd} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6">
-          <p className="text-sm font-medium text-gray-700 mb-3">Agregar ingrediente</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-medium text-gray-700">Agregar ingrediente</p>
+            <button
+              type="button"
+              onClick={handleDictate}
+              disabled={listening}
+              className={`text-sm px-3 py-1 rounded-full border transition-colors ${listening ? 'bg-red-50 border-red-200 text-red-500' : 'border-gray-200 text-gray-400 hover:border-green-300 hover:text-green-600'}`}
+              title="Dictá tus ingredientes"
+            >
+              {listening ? '● Escuchando...' : '🎤 Dictár'}
+            </button>
+          </div>
+          {dictationError && (
+            <p className="text-xs text-red-500 mb-2">{dictationError}</p>
+          )}
           <div className="flex flex-col gap-2">
             <input
               type="text"
