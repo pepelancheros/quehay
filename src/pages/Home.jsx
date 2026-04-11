@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { getUserPantry, getPantryItems, addPantryItem, deletePantryItem, createPantry, joinPantry, getFavoriteRecipes, addFavoriteRecipe, removeFavoriteRecipe } from '../lib/pantry'
 
@@ -26,6 +26,8 @@ export default function Home() {
   // Dictado de voz
   const [listening, setListening] = useState(false)
   const [dictationError, setDictationError] = useState(null)
+  const recognitionRef = useRef(null)
+  const transcriptRef = useRef('')
 
   // Recetas
   const [recipes, setRecipes] = useState([])
@@ -125,7 +127,32 @@ export default function Home() {
     }
   }
 
+  async function processTranscript(text) {
+    if (!text.trim()) return
+    try {
+      const res = await fetch('/api/parse-ingredients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      for (const ing of data.ingredients) {
+        const item = await addPantryItem(pantry.id, ing.name, ing.quantity, ing.unit)
+        setItems((prev) => [...prev, item])
+      }
+    } catch (err) {
+      setDictationError(err.message || 'Error procesando el dictado.')
+    }
+  }
+
   function handleDictate() {
+    // Si está grabando, parar y procesar
+    if (listening) {
+      recognitionRef.current?.stop()
+      return
+    }
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) {
       setDictationError('Tu navegador no soporta dictado de voz.')
@@ -135,36 +162,33 @@ export default function Home() {
     const recognition = new SpeechRecognition()
     recognition.lang = 'es-ES'
     recognition.interimResults = false
+    recognition.continuous = true
+    recognitionRef.current = recognition
+    transcriptRef.current = ''
 
     recognition.onstart = () => {
       setListening(true)
       setDictationError(null)
     }
 
-    recognition.onend = () => setListening(false)
-
-    recognition.onerror = () => {
-      setListening(false)
-      setDictationError('No se pudo capturar el audio. Intentá de nuevo.')
+    recognition.onresult = (e) => {
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          transcriptRef.current += ' ' + e.results[i][0].transcript
+        }
+      }
     }
 
-    recognition.onresult = async (e) => {
-      const text = e.results[0][0].transcript
-      try {
-        const res = await fetch('/api/parse-ingredients', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text }),
-        })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error)
-        for (const ing of data.ingredients) {
-          const item = await addPantryItem(pantry.id, ing.name, ing.quantity, ing.unit)
-          setItems((prev) => [...prev, item])
-        }
-      } catch (err) {
-        setDictationError(err.message || 'Error procesando el dictado.')
-      }
+    recognition.onend = () => {
+      setListening(false)
+      processTranscript(transcriptRef.current.trim())
+      transcriptRef.current = ''
+    }
+
+    recognition.onerror = (e) => {
+      if (e.error === 'no-speech') return // ignorar silencios intermedios
+      setListening(false)
+      setDictationError('No se pudo capturar el audio. Intentá de nuevo.')
     }
 
     recognition.start()
@@ -304,11 +328,10 @@ export default function Home() {
             <button
               type="button"
               onClick={handleDictate}
-              disabled={listening}
               className={`text-sm px-3 py-1 rounded-full border transition-colors ${listening ? 'bg-red-50 border-red-200 text-red-500' : 'border-gray-200 text-gray-400 hover:border-green-300 hover:text-green-600'}`}
-              title="Dictá tus ingredientes"
+              title={listening ? 'Parar grabación' : 'Dictá tus ingredientes'}
             >
-              {listening ? '● Escuchando...' : '🎤 Dictár'}
+              {listening ? '⏹ Parar' : '🎤 Dictár'}
             </button>
           </div>
           {dictationError && (
