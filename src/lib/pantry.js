@@ -119,3 +119,64 @@ export async function removeFavoriteRecipe(id) {
     .eq('id', id)
   if (error) throw error
 }
+
+// Obtiene la lista de compras de una despensa
+export async function getShoppingList(pantryId) {
+  const { data, error } = await supabase
+    .from('shopping_list')
+    .select('*')
+    .eq('pantry_id', pantryId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return data
+}
+
+// Agrega múltiples ítems a la lista de compras (evita duplicados por nombre)
+export async function addShoppingItems(pantryId, names) {
+  const { data: existing } = await supabase
+    .from('shopping_list')
+    .select('name')
+    .eq('pantry_id', pantryId)
+
+  const existingNames = new Set((existing || []).map((i) => i.name.toLowerCase()))
+  const toInsert = names
+    .filter((n) => !existingNames.has(n.toLowerCase()))
+    .map((name) => ({ pantry_id: pantryId, name }))
+
+  if (toInsert.length === 0) return []
+
+  const { data, error } = await supabase
+    .from('shopping_list')
+    .insert(toInsert)
+    .select()
+  if (error) throw error
+  return data
+}
+
+// Marca/desmarca un ítem
+export async function toggleShoppingItem(itemId, checked) {
+  const { error } = await supabase
+    .from('shopping_list')
+    .update({ checked })
+    .eq('id', itemId)
+  if (error) throw error
+}
+
+// Elimina un ítem de la lista
+export async function deleteShoppingItem(itemId) {
+  const { error } = await supabase
+    .from('shopping_list')
+    .delete()
+    .eq('id', itemId)
+  if (error) throw error
+}
+
+// Elimina todos los ítems tachados
+export async function clearCheckedShoppingItems(pantryId) {
+  const { error } = await supabase
+    .from('shopping_list')
+    .delete()
+    .eq('pantry_id', pantryId)
+    .eq('checked', true)
+  if (error) throw error
+}

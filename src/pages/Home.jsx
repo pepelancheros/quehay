@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { getUserPantry, getPantryItems, addPantryItem, updatePantryItemQuantity, deletePantryItem, createPantry, joinPantry, getFavoriteRecipes, addFavoriteRecipe, removeFavoriteRecipe } from '../lib/pantry'
+import { getUserPantry, getPantryItems, addPantryItem, updatePantryItemQuantity, deletePantryItem, createPantry, joinPantry, getFavoriteRecipes, addFavoriteRecipe, removeFavoriteRecipe, getShoppingList, addShoppingItems, toggleShoppingItem, deleteShoppingItem, clearCheckedShoppingItems } from '../lib/pantry'
 
 export default function Home() {
   const [pantry, setPantry] = useState(null)
@@ -40,6 +40,10 @@ export default function Home() {
   const [favorites, setFavorites] = useState([])
   const [showFavorites, setShowFavorites] = useState(false)
 
+  // Lista de compras
+  const [shoppingList, setShoppingList] = useState([])
+  const [showShopping, setShowShopping] = useState(true)
+
   useEffect(() => {
     let attempts = 0
 
@@ -51,6 +55,8 @@ export default function Home() {
         setItems(i)
         const f = await getFavoriteRecipes()
         setFavorites(f)
+        const s = await getShoppingList(p.id)
+        setShoppingList(s)
         setLoading(false)
       } catch (err) {
         if (attempts < 5) {
@@ -249,6 +255,43 @@ export default function Home() {
 
   function isFavorite(recipeName) {
     return favorites.some((f) => f.name === recipeName)
+  }
+
+  async function handleAddToShoppingList(missingItems) {
+    try {
+      const added = await addShoppingItems(pantry.id, missingItems)
+      setShoppingList((prev) => [...prev, ...added])
+      setShowShopping(true)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  async function handleToggleShoppingItem(item) {
+    try {
+      await toggleShoppingItem(item.id, !item.checked)
+      setShoppingList((prev) => prev.map((i) => i.id === item.id ? { ...i, checked: !i.checked } : i))
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  async function handleDeleteShoppingItem(itemId) {
+    try {
+      await deleteShoppingItem(itemId)
+      setShoppingList((prev) => prev.filter((i) => i.id !== itemId))
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  async function handleClearChecked() {
+    try {
+      await clearCheckedShoppingItems(pantry.id)
+      setShoppingList((prev) => prev.filter((i) => !i.checked))
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
   async function handleLogout() {
@@ -524,7 +567,15 @@ export default function Home() {
 
                 {recipe.missing.length > 0 && (
                   <div className="mb-3">
-                    <p className="text-xs font-medium text-amber-600 mb-1">Te falta</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs font-medium text-amber-600">Te falta</p>
+                      <button
+                        onClick={() => handleAddToShoppingList(recipe.missing)}
+                        className="text-xs text-amber-600 hover:text-amber-700 transition-colors"
+                      >
+                        + Lista de compras
+                      </button>
+                    </div>
                     <div className="flex flex-wrap gap-1">
                       {recipe.missing.map((ing, j) => (
                         <span key={j} className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">{ing}</span>
@@ -599,6 +650,52 @@ export default function Home() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Lista de compras */}
+        {shoppingList.length > 0 && (
+          <div className="flex flex-col gap-4 mt-6">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setShowShopping((v) => !v)}
+                className="flex items-center gap-2"
+              >
+                <p className="text-sm font-medium text-gray-700">Lista de compras ({shoppingList.length})</p>
+                <span className={`text-gray-400 text-xl inline-block transition-transform ${showShopping ? '-rotate-90' : 'rotate-90'}`}>›</span>
+              </button>
+              {shoppingList.some((i) => i.checked) && (
+                <button
+                  onClick={handleClearChecked}
+                  className="text-xs text-gray-400 hover:text-red-400 transition-colors"
+                >
+                  Limpiar tachados
+                </button>
+              )}
+            </div>
+            {showShopping && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+                {shoppingList.map((item) => (
+                  <div key={item.id} className="flex items-center gap-3 px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={item.checked}
+                      onChange={() => handleToggleShoppingItem(item)}
+                      className="accent-green-600 w-4 h-4 shrink-0"
+                    />
+                    <span className={`text-sm flex-1 ${item.checked ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+                      {item.name}
+                    </span>
+                    <button
+                      onClick={() => handleDeleteShoppingItem(item.id)}
+                      className="text-gray-300 hover:text-red-400 transition-colors text-lg leading-none"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
