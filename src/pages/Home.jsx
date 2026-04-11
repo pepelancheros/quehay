@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { getUserPantry, getPantryItems, addPantryItem, deletePantryItem, createPantry, joinPantry, getFavoriteRecipes, addFavoriteRecipe, removeFavoriteRecipe } from '../lib/pantry'
+import { getUserPantry, getPantryItems, addPantryItem, updatePantryItemQuantity, deletePantryItem, createPantry, joinPantry, getFavoriteRecipes, addFavoriteRecipe, removeFavoriteRecipe } from '../lib/pantry'
 
 export default function Home() {
   const [pantry, setPantry] = useState(null)
@@ -116,6 +116,17 @@ export default function Home() {
       setError(err.message)
     } finally {
       setAdding(false)
+    }
+  }
+
+  async function handleQuantityChange(item, delta) {
+    const current = item.quantity ?? 1
+    const next = Math.max(0, current + delta)
+    try {
+      await updatePantryItemQuantity(item.id, next)
+      setItems((prev) => prev.map((i) => i.id === item.id ? { ...i, quantity: next } : i))
+    } catch (err) {
+      setError(err.message)
     }
   }
 
@@ -417,20 +428,31 @@ export default function Home() {
           ) : (
             items.map((item) => (
               <div key={item.id} className="flex items-center justify-between px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-gray-800">{item.name}</p>
-                  {(item.quantity || item.unit) && (
-                    <p className="text-xs text-gray-400">
-                      {item.quantity} {item.unit}
-                    </p>
-                  )}
+                <p className="text-sm font-medium text-gray-800">{item.name}</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleQuantityChange(item, -1)}
+                    disabled={(item.quantity ?? 1) <= 1}
+                    className="w-6 h-6 flex items-center justify-center rounded-full border border-gray-200 text-gray-400 hover:border-red-300 hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-gray-200 disabled:hover:text-gray-400 transition-colors text-sm leading-none"
+                  >
+                    −
+                  </button>
+                  <span className="text-sm text-gray-600 min-w-8 text-center">
+                    {item.quantity ?? 1}{item.unit ? ` ${item.unit}` : ''}
+                  </span>
+                  <button
+                    onClick={() => handleQuantityChange(item, 1)}
+                    className="w-6 h-6 flex items-center justify-center rounded-full border border-gray-200 text-gray-400 hover:border-green-300 hover:text-green-600 transition-colors text-sm leading-none"
+                  >
+                    +
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    className="text-gray-300 hover:text-red-400 transition-colors text-lg leading-none ml-1"
+                  >
+                    ×
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  className="text-gray-300 hover:text-red-400 transition-colors text-lg leading-none"
-                >
-                  ×
-                </button>
               </div>
             ))
           )}

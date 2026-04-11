@@ -65,6 +65,15 @@ export async function addPantryItem(pantryId, name, quantity, unit) {
   return data
 }
 
+// Actualiza la cantidad de un ingrediente
+export async function updatePantryItemQuantity(itemId, quantity) {
+  const { error } = await supabase
+    .from('pantry_items')
+    .update({ quantity })
+    .eq('id', itemId)
+  if (error) throw error
+}
+
 // Elimina un ingrediente
 export async function deletePantryItem(itemId) {
   const { error } = await supabase
