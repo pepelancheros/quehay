@@ -22,6 +22,7 @@ export default function Home() {
 
   // Código de despensa minimizado
   const [codeVisible, setCodeVisible] = useState(true)
+  const [pantryVisible, setPantryVisible] = useState(true)
 
   // Dictado de voz
   const [listening, setListening] = useState(false)
@@ -479,7 +480,16 @@ export default function Home() {
 
         {/* Lista de ingredientes */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50 mb-6">
-          {items.length === 0 ? (
+          <button
+            onClick={() => setPantryVisible((v) => !v)}
+            className="w-full flex items-center justify-between px-4 py-3"
+          >
+            <p className="text-sm font-medium text-gray-700">
+              Despensa {items.length > 0 ? `(${items.length})` : ''}
+            </p>
+            <span className={`text-gray-400 text-xl inline-block transition-transform ${pantryVisible ? '-rotate-90' : 'rotate-90'}`}>›</span>
+          </button>
+          {pantryVisible && (items.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-8">La despensa está vacía</p>
           ) : (
             items.map((item) => (
@@ -511,7 +521,7 @@ export default function Home() {
                 </div>
               </div>
             ))
-          )}
+          ))}
         </div>
 
         {/* Filtros + botón sugerir recetas */}
