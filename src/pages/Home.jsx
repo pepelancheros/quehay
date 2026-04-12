@@ -41,6 +41,12 @@ export default function Home() {
   const [favorites, setFavorites] = useState([])
   const [showFavorites, setShowFavorites] = useState(false)
 
+  // Búsqueda de receta por nombre
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResult, setSearchResult] = useState(null)
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchError, setSearchError] = useState(null)
+
   // Lista de compras
   const [shoppingList, setShoppingList] = useState([])
   const [showShopping, setShowShopping] = useState(true)
@@ -257,6 +263,28 @@ export default function Home() {
 
   function isFavorite(recipeName) {
     return favorites.some((f) => f.name === recipeName)
+  }
+
+  async function handleSearchRecipe(e) {
+    e.preventDefault()
+    if (!searchQuery.trim()) return
+    setSearchLoading(true)
+    setSearchError(null)
+    setSearchResult(null)
+    try {
+      const res = await fetch('/api/search-recipe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipeName: searchQuery.trim(), ingredients: items }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error buscando la receta')
+      setSearchResult(data.recipe)
+    } catch (err) {
+      setSearchError(err.message)
+    } finally {
+      setSearchLoading(false)
+    }
   }
 
   async function handleAddToShoppingList(missingItems) {
@@ -523,6 +551,73 @@ export default function Home() {
             ))
           ))}
         </div>
+
+        {/* Buscar receta por nombre */}
+        <form onSubmit={handleSearchRecipe} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6">
+          <p className="text-sm font-medium text-gray-700 mb-3">Buscar receta</p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Ej: Pasta carbonara"
+              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            />
+            <button
+              type="submit"
+              disabled={searchLoading || !searchQuery.trim()}
+              className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-medium px-4 rounded-lg text-sm transition-colors"
+            >
+              {searchLoading ? '...' : 'Buscar'}
+            </button>
+          </div>
+          {searchError && <p className="text-xs text-red-500 mt-2">{searchError}</p>}
+          {searchResult && (
+            <div className="mt-4">
+              <p className="font-semibold text-gray-900 mb-3">{searchResult.name}</p>
+
+              {searchResult.have.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-xs font-medium text-green-700 mb-1">Tenés</p>
+                  <div className="flex flex-wrap gap-1">
+                    {searchResult.have.map((ing, i) => (
+                      <span key={i} className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">{ing}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {searchResult.missing.length > 0 && (
+                <div className="mb-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs font-medium text-amber-600">Te falta</p>
+                    <button
+                      type="button"
+                      onClick={() => handleAddToShoppingList(searchResult.missing)}
+                      className="text-xs text-amber-600 hover:text-amber-700 transition-colors"
+                    >
+                      + Añadir a lista de compras
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {searchResult.missing.map((ing, i) => (
+                      <span key={i} className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">{ing}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <p className="text-xs font-medium text-gray-500 mb-1">Pasos</p>
+                <ol className="flex flex-col gap-1">
+                  {searchResult.steps.map((step, i) => (
+                    <li key={i} className="text-xs text-gray-600">{i + 1}. {step}</li>
+                  ))}
+                </ol>
+              </div>
+            </div>
+          )}
+        </form>
 
         {/* Filtros + botón sugerir recetas */}
         {items.length > 0 && (
