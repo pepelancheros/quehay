@@ -22,7 +22,7 @@ export default function Home() {
 
   // Código de despensa minimizado
   const [codeVisible, setCodeVisible] = useState(true)
-  const [pantryVisible, setPantryVisible] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [selectedItems, setSelectedItems] = useState(new Set())
 
   // Dictado de voz
@@ -400,130 +400,21 @@ export default function Home() {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8">
-      <div className="max-w-md mx-auto">
+    <div className="min-h-screen bg-gray-50">
 
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">¿Qué hay?</h1>
-          <button onClick={handleLogout} className="text-sm text-gray-400 hover:text-gray-600">
-            Salir
-          </button>
+      {/* Drawer overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black/30 z-20" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      {/* Drawer: solo lista de ingredientes */}
+      <aside className={`fixed top-0 left-0 h-full w-80 bg-white border-r border-gray-100 shadow-xl z-30 flex flex-col transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
+          <p className="text-sm font-semibold text-gray-700">Despensa ({items.length} ingredientes)</p>
+          <button onClick={() => setSidebarOpen(false)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">‹</button>
         </div>
-
-        {/* Invite code */}
-        {pantry && (
-          <div className="bg-green-50 border border-green-100 rounded-xl px-4 py-3 mb-6">
-            <button
-              onClick={() => setCodeVisible((v) => !v)}
-              className="w-full flex items-center justify-between"
-            >
-              <p className="text-xs text-green-700 font-medium">Código de tu despensa</p>
-              <span className={`text-green-600 text-xl inline-block transition-transform ${codeVisible ? '-rotate-90' : 'rotate-90'}`}>›</span>
-            </button>
-            {codeVisible && (
-              <div className="flex items-center justify-between mt-2">
-                <p className="text-lg font-mono font-bold text-green-800 tracking-widest">{pantry.inviteCode}</p>
-                <p className="text-xs text-green-600 text-right max-w-[140px]">Compartilo para que otro usuario se una</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {error && (
-          <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg mb-4">{error}</p>
-        )}
-
-        {/* Formulario agregar */}
-        <form onSubmit={handleAdd} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-medium text-gray-700">Agregar ingrediente</p>
-            <button
-              type="button"
-              onClick={handleDictate}
-              className={`text-sm px-3 py-1 rounded-full border transition-colors ${listening ? 'bg-red-50 border-red-200 text-red-500' : 'border-gray-200 text-gray-400 hover:border-green-300 hover:text-green-600'}`}
-              title={listening ? 'Parar grabación' : 'Dictá tus ingredientes'}
-            >
-              {listening ? '⏹ Parar' : '🎤 Dictár'}
-            </button>
-          </div>
-          {dictationError && (
-            <p className="text-xs text-red-500 mb-2">{dictationError}</p>
-          )}
-          <div className="flex flex-col gap-2">
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Nombre (ej: Arroz)"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-            <div className="flex gap-2">
-              <input
-                type="number"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                placeholder="Cantidad"
-                min="0"
-                className="w-1/2 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-              <input
-                type="text"
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-                placeholder="Unidad (ej: kg)"
-                className="w-1/2 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={adding}
-              className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-medium py-2 rounded-lg text-sm transition-colors"
-            >
-              {adding ? 'Agregando...' : 'Agregar'}
-            </button>
-          </div>
-        </form>
-
-        {/* Unirse a otra despensa — solo visible cuando la despensa está vacía */}
-        {items.length === 0 && (
-          <form onSubmit={handleJoinPantry} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6">
-            <p className="text-sm font-medium text-gray-700 mb-3">Unirme a otra despensa</p>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={inviteCode}
-                onChange={(e) => setInviteCode(e.target.value)}
-                placeholder="Código de despensa"
-                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-              <button
-                type="submit"
-                disabled={joiningOrCreating || !inviteCode.trim()}
-                className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-medium px-4 rounded-lg text-sm transition-colors"
-              >
-                {joiningOrCreating ? '...' : 'Unirme'}
-              </button>
-            </div>
-            {setupError && (
-              <p className="text-sm text-red-500 mt-2">{setupError}</p>
-            )}
-          </form>
-        )}
-
-        {/* Lista de ingredientes */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50 mb-6">
-          <button
-            onClick={() => setPantryVisible((v) => !v)}
-            className="w-full flex items-center justify-between px-4 py-3"
-          >
-            <p className="text-sm font-medium text-gray-700">
-              Despensa {items.length > 0 ? `(${items.length})` : ''}
-            </p>
-            <span className={`text-gray-400 text-xl inline-block transition-transform ${pantryVisible ? '-rotate-90' : 'rotate-90'}`}>›</span>
-          </button>
-          {pantryVisible && (items.length === 0 ? (
+        <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
+          {items.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-8">La despensa está vacía</p>
           ) : (
             items.map((item) => (
@@ -546,330 +437,288 @@ export default function Home() {
                     onClick={() => handleQuantityChange(item, -1)}
                     disabled={(item.quantity ?? 1) <= 1}
                     className="w-6 h-6 flex items-center justify-center rounded-full border border-gray-200 text-gray-400 hover:border-red-300 hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-gray-200 disabled:hover:text-gray-400 transition-colors text-sm leading-none"
-                  >
-                    −
-                  </button>
+                  >−</button>
                   <span className="text-sm text-gray-600 min-w-8 text-center">
                     {item.quantity ?? 1}{item.unit ? ` ${item.unit}` : ''}
                   </span>
                   <button
                     onClick={() => handleQuantityChange(item, 1)}
                     className="w-6 h-6 flex items-center justify-center rounded-full border border-gray-200 text-gray-400 hover:border-green-300 hover:text-green-600 transition-colors text-sm leading-none"
-                  >
-                    +
-                  </button>
+                  >+</button>
                   <button
                     onClick={() => handleDelete(item.id)}
                     className="text-gray-300 hover:text-red-400 transition-colors text-lg leading-none ml-1"
-                  >
-                    ×
-                  </button>
+                  >×</button>
                 </div>
               </div>
             ))
-          ))}
+          )}
+        </div>
+      </aside>
+
+      {/* Página principal */}
+      <div className="max-w-6xl mx-auto px-4 py-8">
+
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSidebarOpen((v) => !v)} className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors" title="Ver despensa">
+              <span className="text-sm font-medium">Despensa ({items.length} ingredientes)</span>
+              <span className={`text-lg leading-none -translate-y-px inline-block transition-transform duration-300 ${sidebarOpen ? 'rotate-180' : ''}`}>›</span>
+            </button>
+            </div>
+          <button onClick={handleLogout} className="text-sm text-gray-400 hover:text-gray-600">Salir</button>
         </div>
 
-        {/* Buscar receta por nombre */}
-        <form onSubmit={handleSearchRecipe} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6">
-          <p className="text-sm font-medium text-gray-700 mb-3">Buscar receta</p>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Ej: Pasta carbonara"
-              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-            <button
-              type="submit"
-              disabled={searchLoading || !searchQuery.trim()}
-              className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-medium px-4 rounded-lg text-sm transition-colors"
-            >
-              {searchLoading ? '...' : 'Buscar'}
-            </button>
-          </div>
-          {searchError && <p className="text-xs text-red-500 mt-2">{searchError}</p>}
-          {searchResult && (
-            <div className="mt-4">
-              <p className="font-semibold text-gray-900 mb-3">{searchResult.name}</p>
+        {error && <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg mb-4">{error}</p>}
 
-              {searchResult.have.length > 0 && (
-                <div className="mb-3">
-                  <p className="text-xs font-medium text-green-700 mb-1">Tenés</p>
-                  <div className="flex flex-wrap gap-1">
-                    {searchResult.have.map((ing, i) => (
-                      <span key={i} className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">{ing}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
+        <div className="flex flex-col lg:grid lg:grid-cols-2 lg:gap-8">
 
-              {searchResult.missing.length > 0 && (
-                <div className="mb-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-xs font-medium text-amber-600">Te falta</p>
-                    <button
-                      type="button"
-                      onClick={() => handleAddToShoppingList(searchResult.missing)}
-                      className="text-xs text-amber-600 hover:text-amber-700 transition-colors"
-                    >
-                      + Añadir a lista de compras
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {searchResult.missing.map((ing, i) => (
-                      <span key={i} className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">{ing}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
+          {/* Columna izquierda */}
+          <div>
 
-              <div>
-                <p className="text-xs font-medium text-gray-500 mb-1">Pasos</p>
-                <ol className="flex flex-col gap-1">
-                  {searchResult.steps.map((step, i) => (
-                    <li key={i} className="text-xs text-gray-600">{i + 1}. {step}</li>
-                  ))}
-                </ol>
+            {/* Invite code */}
+            {pantry && (
+              <div className="bg-green-50 border border-green-100 rounded-xl px-4 py-3 mb-6">
+                <button onClick={() => setCodeVisible((v) => !v)} className="w-full flex items-center justify-between">
+                  <p className="text-xs text-green-700 font-medium">Código de tu despensa</p>
+                  <span className={`text-green-600 text-xl inline-block transition-transform ${codeVisible ? '-rotate-90' : 'rotate-90'}`}>›</span>
+                </button>
+                {codeVisible && (
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-lg font-mono font-bold text-green-800 tracking-widest">{pantry.inviteCode}</p>
+                    <p className="text-xs text-green-600 text-right max-w-[140px]">Compartilo para que otro usuario se una</p>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
-        </form>
+            )}
 
-        {/* Filtros + botón sugerir recetas */}
-        {items.length > 0 && (
-          <div className="mb-6">
-            <div className="flex flex-wrap gap-2 mb-3">
-              {['cualquiera', 'desayuno', 'almuerzo', 'cena', 'ensalada'].map((tipo) => (
+            {/* Formulario agregar */}
+            <form onSubmit={handleAdd} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-medium text-gray-700">Agregar ingrediente</p>
                 <button
-                  key={tipo}
                   type="button"
-                  onClick={() => setMealType(tipo)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors capitalize ${mealType === tipo ? 'bg-green-600 text-white border-green-600' : 'border-gray-200 text-gray-500 hover:border-green-300 hover:text-green-600'}`}
+                  onClick={handleDictate}
+                  className={`text-sm px-3 py-1 rounded-full border transition-colors ${listening ? 'bg-red-50 border-red-200 text-red-500' : 'border-gray-200 text-gray-400 hover:border-green-300 hover:text-green-600'}`}
+                  title={listening ? 'Parar grabación' : 'Dictá tus ingredientes'}
                 >
-                  {tipo}
+                  {listening ? '⏹ Parar' : '🎤 Dictár'}
                 </button>
-              ))}
-            </div>
-            {selectedItems.size > 0 && (
-              <div className="flex items-center gap-2 mb-2">
-                <button
-                  onClick={() => handleGetRecipes()}
-                  disabled={loadingRecipes}
-                  className="flex-1 bg-green-700 hover:bg-green-800 disabled:opacity-50 text-white font-medium py-3 rounded-2xl text-sm transition-colors"
-                >
-                  {loadingRecipes ? 'Generando...' : `¿Qué cocino con ${[...selectedItems].join(', ')}?`}
+              </div>
+              {dictationError && <p className="text-xs text-red-500 mb-2">{dictationError}</p>}
+              <div className="flex flex-col gap-2">
+                <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre (ej: Arroz)" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" />
+                <div className="flex gap-2">
+                  <input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="Cantidad" min="0" className="w-1/2 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" />
+                  <input type="text" value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="Unidad (ej: kg)" className="w-1/2 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" />
+                </div>
+                <button type="submit" disabled={adding} className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-medium py-2 rounded-lg text-sm transition-colors">
+                  {adding ? 'Agregando...' : 'Agregar'}
                 </button>
-                <button
-                  onClick={() => setSelectedItems(new Set())}
-                  className="text-gray-400 hover:text-gray-600 text-sm px-2"
-                  title="Limpiar selección"
-                >
-                  ✕
+              </div>
+            </form>
+
+            {/* Unirse a otra despensa */}
+            {items.length === 0 && (
+              <form onSubmit={handleJoinPantry} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6">
+                <p className="text-sm font-medium text-gray-700 mb-3">Unirme a otra despensa</p>
+                <div className="flex gap-2">
+                  <input type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} placeholder="Código de despensa" className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" />
+                  <button type="submit" disabled={joiningOrCreating || !inviteCode.trim()} className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-medium px-4 rounded-lg text-sm transition-colors">
+                    {joiningOrCreating ? '...' : 'Unirme'}
+                  </button>
+                </div>
+                {setupError && <p className="text-sm text-red-500 mt-2">{setupError}</p>}
+              </form>
+            )}
+
+          </div>{/* fin columna izquierda */}
+
+          {/* Columna derecha */}
+          <div>
+
+            {/* Filtros + botón sugerir recetas */}
+            {items.length > 0 && (
+              <div className="mb-6">
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {['cualquiera', 'desayuno', 'almuerzo', 'cena', 'ensalada'].map((tipo) => (
+                    <button key={tipo} type="button" onClick={() => setMealType(tipo)} className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors capitalize ${mealType === tipo ? 'bg-green-600 text-white border-green-600' : 'border-gray-200 text-gray-500 hover:border-green-300 hover:text-green-600'}`}>{tipo}</button>
+                  ))}
+                </div>
+                {selectedItems.size > 0 && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <button onClick={() => handleGetRecipes()} disabled={loadingRecipes} className="flex-1 bg-green-700 hover:bg-green-800 disabled:opacity-50 text-white font-medium py-3 rounded-2xl text-sm transition-colors">
+                      {loadingRecipes ? 'Generando...' : `¿Qué cocino con ${[...selectedItems].join(', ')}?`}
+                    </button>
+                    <button onClick={() => setSelectedItems(new Set())} className="text-gray-400 hover:text-gray-600 text-sm px-2" title="Limpiar selección">✕</button>
+                  </div>
+                )}
+                <button onClick={() => handleGetRecipes()} disabled={loadingRecipes} className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-medium py-3 rounded-2xl text-sm transition-colors">
+                  {loadingRecipes ? 'Generando recetas...' : '¿Qué puedo cocinar?'}
                 </button>
               </div>
             )}
-            <button
-              onClick={() => handleGetRecipes()}
-              disabled={loadingRecipes}
-              className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-medium py-3 rounded-2xl text-sm transition-colors"
-            >
-              {loadingRecipes ? 'Generando recetas...' : '¿Qué puedo cocinar?'}
-            </button>
-          </div>
-        )}
 
-        {recipesError && (
-          <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg mb-4">{recipesError}</p>
-        )}
+            {recipesError && <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg mb-4">{recipesError}</p>}
 
-        {/* Recetas sugeridas */}
-        {recipes.length > 0 && (
-          <div className="flex flex-col gap-4 mb-8">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-700">Recetas sugeridas</p>
-              <button
-                onClick={() => handleGetRecipes({ append: true })}
-                disabled={loadingRecipes}
-                className="text-xs text-green-600 hover:text-green-700 disabled:opacity-50 transition-colors"
-              >
-                + Más opciones
-              </button>
-            </div>
-            {recipes.map((recipe, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <p className="font-semibold text-gray-900">{recipe.name}</p>
-                  <button
-                    onClick={() => handleToggleFavorite(recipe)}
-                    className="text-xl leading-none ml-2 shrink-0"
-                    title={isFavorite(recipe.name) ? 'Quitar de favoritos' : 'Guardar en favoritos'}
-                  >
-                    {isFavorite(recipe.name) ? '★' : '☆'}
-                  </button>
-                </div>
-
-                <div className="mb-3">
-                  <p className="text-xs font-medium text-green-700 mb-1">Tenés</p>
-                  <div className="flex flex-wrap gap-1">
-                    {recipe.have.map((ing, j) => (
-                      <span key={j} className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">{ing}</span>
-                    ))}
+            {/* Buscar receta */}
+            <form onSubmit={handleSearchRecipe} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6">
+              <p className="text-sm font-medium text-gray-700 mb-3">Buscar receta</p>
+              <div className="flex gap-2">
+                <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Ej: Pasta carbonara" className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" />
+                <button type="submit" disabled={searchLoading || !searchQuery.trim()} className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-medium px-4 rounded-lg text-sm transition-colors">
+                  {searchLoading ? '...' : 'Buscar'}
+                </button>
+              </div>
+              {searchError && <p className="text-xs text-red-500 mt-2">{searchError}</p>}
+              {searchResult && (
+                <div className="mt-4">
+                  <p className="font-semibold text-gray-900 mb-3">{searchResult.name}</p>
+                  {searchResult.have.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-xs font-medium text-green-700 mb-1">Tenés</p>
+                      <div className="flex flex-wrap gap-1">
+                        {searchResult.have.map((ing, i) => <span key={i} className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">{ing}</span>)}
+                      </div>
+                    </div>
+                  )}
+                  {searchResult.missing.length > 0 && (
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-xs font-medium text-amber-600">Te falta</p>
+                        <button type="button" onClick={() => handleAddToShoppingList(searchResult.missing)} className="text-xs text-amber-600 hover:text-amber-700 transition-colors">+ Añadir a lista de compras</button>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {searchResult.missing.map((ing, i) => <span key={i} className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">{ing}</span>)}
+                      </div>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 mb-1">Pasos</p>
+                    <ol className="flex flex-col gap-1">
+                      {searchResult.steps.map((step, i) => <li key={i} className="text-xs text-gray-600">{i + 1}. {step}</li>)}
+                    </ol>
                   </div>
                 </div>
+              )}
+            </form>
 
-                {recipe.missing.length > 0 && (
-                  <div className="mb-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs font-medium text-amber-600">Te falta</p>
-                      <button
-                        onClick={() => handleAddToShoppingList(recipe.missing)}
-                        className="text-xs text-amber-600 hover:text-amber-700 transition-colors"
-                      >
-                        + Añadir a lista de compras
+            {/* Recetas sugeridas */}
+            {recipes.length > 0 && (
+              <div className="flex flex-col gap-4 mb-8">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-gray-700">Recetas sugeridas</p>
+                  <button onClick={() => handleGetRecipes({ append: true })} disabled={loadingRecipes} className="text-xs text-green-600 hover:text-green-700 disabled:opacity-50 transition-colors">+ Más opciones</button>
+                </div>
+                {recipes.map((recipe, i) => (
+                  <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <p className="font-semibold text-gray-900">{recipe.name}</p>
+                      <button onClick={() => handleToggleFavorite(recipe)} className="text-xl leading-none ml-2 shrink-0" title={isFavorite(recipe.name) ? 'Quitar de favoritos' : 'Guardar en favoritos'}>
+                        {isFavorite(recipe.name) ? '★' : '☆'}
                       </button>
                     </div>
-                    <div className="flex flex-wrap gap-1">
-                      {recipe.missing.map((ing, j) => (
-                        <span key={j} className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">{ing}</span>
-                      ))}
+                    <div className="mb-3">
+                      <p className="text-xs font-medium text-green-700 mb-1">Tenés</p>
+                      <div className="flex flex-wrap gap-1">
+                        {recipe.have.map((ing, j) => <span key={j} className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">{ing}</span>)}
+                      </div>
                     </div>
-                  </div>
-                )}
-
-                <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Pasos</p>
-                  <ol className="flex flex-col gap-1">
-                    {recipe.steps.map((step, j) => (
-                      <li key={j} className="text-xs text-gray-600">{j + 1}. {step}</li>
-                    ))}
-                  </ol>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Recetas favoritas */}
-        {favorites.length > 0 && (
-          <div className="flex flex-col gap-4">
-            <button
-              onClick={() => setShowFavorites((v) => !v)}
-              className="flex items-center justify-between"
-            >
-              <p className="text-sm font-medium text-gray-700">Favoritos ({favorites.length})</p>
-              <span className={`text-gray-400 text-xl inline-block transition-transform ${showFavorites ? '-rotate-90' : 'rotate-90'}`}>›</span>
-            </button>
-            {showFavorites && favorites.map((recipe) => (
-              <div key={recipe.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <p className="font-semibold text-gray-900">{recipe.name}</p>
-                  <button
-                    onClick={() => removeFavoriteRecipe(recipe.id).then(() => setFavorites((prev) => prev.filter((f) => f.id !== recipe.id)))}
-                    className="text-xl leading-none ml-2 shrink-0 text-yellow-400"
-                    title="Quitar de favoritos"
-                  >
-                    ★
-                  </button>
-                </div>
-
-                <div className="mb-3">
-                  <p className="text-xs font-medium text-green-700 mb-1">Tenés</p>
-                  <div className="flex flex-wrap gap-1">
-                    {recipe.have.map((ing, j) => (
-                      <span key={j} className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">{ing}</span>
-                    ))}
-                  </div>
-                </div>
-
-                {recipe.missing.length > 0 && (
-                  <div className="mb-3">
-                    <p className="text-xs font-medium text-amber-600 mb-1">Te falta</p>
-                    <div className="flex flex-wrap gap-1">
-                      {recipe.missing.map((ing, j) => (
-                        <span key={j} className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">{ing}</span>
-                      ))}
+                    {recipe.missing.length > 0 && (
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-xs font-medium text-amber-600">Te falta</p>
+                          <button onClick={() => handleAddToShoppingList(recipe.missing)} className="text-xs text-amber-600 hover:text-amber-700 transition-colors">+ Añadir a lista de compras</button>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {recipe.missing.map((ing, j) => <span key={j} className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">{ing}</span>)}
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-1">Pasos</p>
+                      <ol className="flex flex-col gap-1">
+                        {recipe.steps.map((step, j) => <li key={j} className="text-xs text-gray-600">{j + 1}. {step}</li>)}
+                      </ol>
                     </div>
-                  </div>
-                )}
-
-                <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Pasos</p>
-                  <ol className="flex flex-col gap-1">
-                    {recipe.steps.map((step, j) => (
-                      <li key={j} className="text-xs text-gray-600">{j + 1}. {step}</li>
-                    ))}
-                  </ol>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Lista de compras */}
-        {pantry && (
-          <div className="flex flex-col gap-4 mt-6">
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => setShowShopping((v) => !v)}
-                className="flex items-center gap-2"
-              >
-                <p className="text-sm font-medium text-gray-700">Lista de compras ({shoppingList.length})</p>
-                <span className={`text-gray-400 text-xl inline-block transition-transform ${showShopping ? '-rotate-90' : 'rotate-90'}`}>›</span>
-              </button>
-              {shoppingList.some((i) => i.checked) && (
-                <button
-                  onClick={handleClearChecked}
-                  className="text-xs text-gray-400 hover:text-red-400 transition-colors"
-                >
-                  Limpiar tachados
-                </button>
-              )}
-            </div>
-            {showShopping && (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
-                {shoppingList.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={item.checked}
-                      onChange={() => handleToggleShoppingItem(item)}
-                      className="accent-green-600 w-4 h-4 shrink-0"
-                    />
-                    <span className={`text-sm flex-1 ${item.checked ? 'line-through text-gray-400' : 'text-gray-800'}`}>
-                      {item.name}
-                    </span>
-                    <button
-                      onClick={() => handleDeleteShoppingItem(item.id)}
-                      className="text-gray-300 hover:text-red-400 transition-colors text-lg leading-none"
-                    >
-                      ×
-                    </button>
                   </div>
                 ))}
-                <form onSubmit={handleAddShoppingManual} className="flex gap-2 px-4 py-3">
-                  <input
-                    type="text"
-                    value={shoppingInput}
-                    onChange={(e) => setShoppingInput(e.target.value)}
-                    placeholder="Añadir ítem..."
-                    className="flex-1 text-sm outline-none text-gray-700 placeholder-gray-300"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!shoppingInput.trim()}
-                    className="text-green-600 hover:text-green-700 disabled:opacity-30 text-sm font-medium transition-colors"
-                  >
-                    Añadir
-                  </button>
-                </form>
               </div>
             )}
-          </div>
-        )}
 
-      </div>
+            {/* Favoritos */}
+            {favorites.length > 0 && (
+              <div className="flex flex-col gap-4">
+                <button onClick={() => setShowFavorites((v) => !v)} className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-gray-700">Favoritos ({favorites.length})</p>
+                  <span className={`text-gray-400 text-xl inline-block transition-transform ${showFavorites ? '-rotate-90' : 'rotate-90'}`}>›</span>
+                </button>
+                {showFavorites && favorites.map((recipe) => (
+                  <div key={recipe.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <p className="font-semibold text-gray-900">{recipe.name}</p>
+                      <button onClick={() => removeFavoriteRecipe(recipe.id).then(() => setFavorites((prev) => prev.filter((f) => f.id !== recipe.id)))} className="text-xl leading-none ml-2 shrink-0 text-yellow-400" title="Quitar de favoritos">★</button>
+                    </div>
+                    <div className="mb-3">
+                      <p className="text-xs font-medium text-green-700 mb-1">Tenés</p>
+                      <div className="flex flex-wrap gap-1">
+                        {recipe.have.map((ing, j) => <span key={j} className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">{ing}</span>)}
+                      </div>
+                    </div>
+                    {recipe.missing.length > 0 && (
+                      <div className="mb-3">
+                        <p className="text-xs font-medium text-amber-600 mb-1">Te falta</p>
+                        <div className="flex flex-wrap gap-1">
+                          {recipe.missing.map((ing, j) => <span key={j} className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">{ing}</span>)}
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-1">Pasos</p>
+                      <ol className="flex flex-col gap-1">
+                        {recipe.steps.map((step, j) => <li key={j} className="text-xs text-gray-600">{j + 1}. {step}</li>)}
+                      </ol>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+          </div>{/* fin columna derecha */}
+
+          {/* Lista de compras — al final en mobile (orden 3), col 1 fila 2 en desktop */}
+          {pantry && (
+            <div className="flex flex-col gap-4 lg:col-start-1">
+              <div className="flex items-center justify-between">
+                <button onClick={() => setShowShopping((v) => !v)} className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-gray-700">Lista de compras ({shoppingList.length})</p>
+                  <span className={`text-gray-400 text-xl inline-block transition-transform ${showShopping ? '-rotate-90' : 'rotate-90'}`}>›</span>
+                </button>
+                {shoppingList.some((i) => i.checked) && (
+                  <button onClick={handleClearChecked} className="text-xs text-gray-400 hover:text-red-400 transition-colors">Limpiar tachados</button>
+                )}
+              </div>
+              {showShopping && (
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+                  {shoppingList.map((item) => (
+                    <div key={item.id} className="flex items-center gap-3 px-4 py-3">
+                      <input type="checkbox" checked={item.checked} onChange={() => handleToggleShoppingItem(item)} className="accent-green-600 w-4 h-4 shrink-0" />
+                      <span className={`text-sm flex-1 ${item.checked ? 'line-through text-gray-400' : 'text-gray-800'}`}>{item.name}</span>
+                      <button onClick={() => handleDeleteShoppingItem(item.id)} className="text-gray-300 hover:text-red-400 transition-colors text-lg leading-none">×</button>
+                    </div>
+                  ))}
+                  <form onSubmit={handleAddShoppingManual} className="flex gap-2 px-4 py-3">
+                    <input type="text" value={shoppingInput} onChange={(e) => setShoppingInput(e.target.value)} placeholder="Añadir ítem..." className="flex-1 text-sm outline-none text-gray-700 placeholder-gray-300" />
+                    <button type="submit" disabled={!shoppingInput.trim()} className="text-green-600 hover:text-green-700 disabled:opacity-30 text-sm font-medium transition-colors">Añadir</button>
+                  </form>
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>{/* fin grid */}
+      </div>{/* fin max-w-6xl */}
     </div>
   )
 }
