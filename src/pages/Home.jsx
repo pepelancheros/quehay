@@ -230,6 +230,7 @@ export default function Home() {
   }
 
   async function handleGetRecipes({ append = false } = {}) {
+    setSearchResult(null)
     setLoadingRecipes(true)
     setRecipesError(null)
     if (!append) setRecipes([])
@@ -274,6 +275,7 @@ export default function Home() {
   async function handleSearchRecipe(e) {
     e.preventDefault()
     if (!searchQuery.trim()) return
+    setRecipes([])
     setSearchLoading(true)
     setSearchError(null)
     setSearchResult(null)
@@ -496,7 +498,7 @@ export default function Home() {
             {/* Formulario agregar */}
             <form onSubmit={handleAdd} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-medium text-gray-700">Agregar ingrediente</p>
+                <p className="text-sm font-medium text-gray-700">Agregar ingrediente a la despensa</p>
                 <button
                   type="button"
                   onClick={handleDictate}
