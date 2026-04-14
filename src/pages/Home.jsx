@@ -23,6 +23,7 @@ export default function Home() {
   // Código de despensa minimizado
   const [codeVisible, setCodeVisible] = useState(true)
   const [pantryVisible, setPantryVisible] = useState(true)
+  const [selectedItems, setSelectedItems] = useState(new Set())
 
   // Dictado de voz
   const [listening, setListening] = useState(false)
@@ -237,7 +238,12 @@ export default function Home() {
       const res = await fetch('/api/recipes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ingredients: items, mealType, excludeRecipes: exclude }),
+        body: JSON.stringify({
+          ingredients: items,
+          mealType,
+          excludeRecipes: exclude,
+          requiredIngredients: selectedItems.size > 0 ? [...selectedItems] : [],
+        }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error generando recetas')
@@ -522,7 +528,19 @@ export default function Home() {
           ) : (
             items.map((item) => (
               <div key={item.id} className="flex items-center justify-between px-4 py-3">
-                <p className="text-sm font-medium text-gray-800">{item.name}</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedItems.has(item.name)}
+                    onChange={() => setSelectedItems((prev) => {
+                      const next = new Set(prev)
+                      next.has(item.name) ? next.delete(item.name) : next.add(item.name)
+                      return next
+                    })}
+                    className="accent-green-600 w-4 h-4 shrink-0"
+                  />
+                  <p className="text-sm font-medium text-gray-800">{item.name}</p>
+                </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleQuantityChange(item, -1)}
@@ -634,6 +652,24 @@ export default function Home() {
                 </button>
               ))}
             </div>
+            {selectedItems.size > 0 && (
+              <div className="flex items-center gap-2 mb-2">
+                <button
+                  onClick={() => handleGetRecipes()}
+                  disabled={loadingRecipes}
+                  className="flex-1 bg-green-700 hover:bg-green-800 disabled:opacity-50 text-white font-medium py-3 rounded-2xl text-sm transition-colors"
+                >
+                  {loadingRecipes ? 'Generando...' : `¿Qué cocino con ${[...selectedItems].join(', ')}?`}
+                </button>
+                <button
+                  onClick={() => setSelectedItems(new Set())}
+                  className="text-gray-400 hover:text-gray-600 text-sm px-2"
+                  title="Limpiar selección"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
             <button
               onClick={() => handleGetRecipes()}
               disabled={loadingRecipes}

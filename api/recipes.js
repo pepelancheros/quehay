@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { ingredients, mealType, excludeRecipes } = req.body
+  const { ingredients, mealType, excludeRecipes, requiredIngredients } = req.body
 
   if (!ingredients || ingredients.length === 0) {
     return res.status(400).json({ error: 'No hay ingredientes en la despensa' })
@@ -12,6 +12,10 @@ export default async function handler(req, res) {
   const ingredientList = ingredients
     .map((i) => `${i.name}${i.quantity ? ` (${i.quantity} ${i.unit || ''})`.trim() : ''}`)
     .join(', ')
+
+  const requiredFilter = requiredIngredients && requiredIngredients.length > 0
+    ? `Las recetas DEBEN incluir estos ingredientes: ${requiredIngredients.join(', ')}.`
+    : ''
 
   const mealFilter = mealType && mealType !== 'cualquiera'
     ? `Solo sugerí recetas de tipo "${mealType}".`
@@ -23,6 +27,7 @@ export default async function handler(req, res) {
 
   const prompt = `Tengo estos ingredientes en mi despensa: ${ingredientList}.
 
+${requiredFilter}
 ${mealFilter}
 ${excludeFilter}
 Sugerime 3 recetas que pueda hacer. Para cada receta incluí:
