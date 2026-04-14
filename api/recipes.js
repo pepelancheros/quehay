@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { ingredients, mealType, excludeRecipes, requiredIngredients } = req.body
+  const { ingredients, mealType, excludeRecipes, requiredIngredients, extraFilters } = req.body
 
   if (!ingredients || ingredients.length === 0) {
     return res.status(400).json({ error: 'No hay ingredientes en la despensa' })
@@ -25,11 +25,19 @@ export default async function handler(req, res) {
     ? `No sugieras estas recetas que ya mostraste: ${excludeRecipes.join(', ')}.`
     : ''
 
+  const extraFilterLines = []
+  if (extraFilters?.difficulty) extraFilterLines.push(`Dificultad: ${extraFilters.difficulty}.`)
+  if (extraFilters?.time) extraFilterLines.push(`Tiempo de preparación: ${extraFilters.time === 'Rápido' ? 'menos de 20 minutos' : extraFilters.time === 'Normal' ? 'entre 20 y 40 minutos' : 'más de 40 minutos'}.`)
+  if (extraFilters?.diet?.length > 0) extraFilterLines.push(`Restricciones dietéticas: ${extraFilters.diet.join(', ')}.`)
+  if (extraFilters?.flavor) extraFilterLines.push(`Sabor predominante: ${extraFilters.flavor}.`)
+  const extraFilter = extraFilterLines.join('\n')
+
   const prompt = `Tengo estos ingredientes en mi despensa: ${ingredientList}.
 
 ${requiredFilter}
 ${mealFilter}
 ${excludeFilter}
+${extraFilter}
 Sugiéreme 3 recetas que pueda hacer. Para cada receta incluye:
 - Nombre de la receta
 - Ingredientes que ya tengo (de la lista)

@@ -53,6 +53,10 @@ export default function Home() {
   const [showShopping, setShowShopping] = useState(true)
   const [shoppingInput, setShoppingInput] = useState('')
 
+  // Filtros extra
+  const [showFiltersModal, setShowFiltersModal] = useState(false)
+  const [extraFilters, setExtraFilters] = useState({ difficulty: '', time: '', diet: [], flavor: '' })
+
   useEffect(() => {
     let attempts = 0
 
@@ -244,6 +248,7 @@ export default function Home() {
           mealType,
           excludeRecipes: exclude,
           requiredIngredients: selectedItems.size > 0 ? [...selectedItems] : [],
+          extraFilters,
         }),
       })
       const data = await res.json()
@@ -577,6 +582,14 @@ export default function Home() {
                   {['cualquiera', 'desayuno', 'almuerzo', 'cena', 'ensalada'].map((tipo) => (
                     <button key={tipo} type="button" onClick={() => setMealType(tipo)} className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors capitalize ${mealType === tipo ? 'bg-green-600 text-white border-green-600' : 'border-gray-200 text-gray-500 hover:border-green-300 hover:text-green-600'}`}>{tipo}</button>
                   ))}
+                  <button type="button" onClick={() => setShowFiltersModal(true)} className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors flex items-center gap-1 ${(extraFilters.difficulty || extraFilters.time || extraFilters.diet.length > 0 || extraFilters.flavor) ? 'bg-green-600 text-white border-green-600' : 'border-gray-200 text-gray-500 hover:border-green-300 hover:text-green-600'}`}>
+                    + filtros
+                    {(extraFilters.difficulty ? 1 : 0) + (extraFilters.time ? 1 : 0) + extraFilters.diet.length + (extraFilters.flavor ? 1 : 0) > 0 && (
+                      <span className="bg-white text-green-700 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">
+                        {(extraFilters.difficulty ? 1 : 0) + (extraFilters.time ? 1 : 0) + extraFilters.diet.length + (extraFilters.flavor ? 1 : 0)}
+                      </span>
+                    )}
+                  </button>
                 </div>
                 {selectedItems.size > 0 && (
                   <div className="flex items-center gap-2 mb-2">
@@ -751,6 +764,67 @@ export default function Home() {
 
         </div>{/* fin grid */}
       </div>{/* fin max-w-6xl */}
+
+      {/* Modal más filtros */}
+      {showFiltersModal && (
+        <div className="fixed inset-0 bg-black/40 z-40 flex items-end sm:items-center justify-center p-4" onClick={() => setShowFiltersModal(false)}>
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6 flex flex-col gap-5" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-gray-900">Más filtros</p>
+              <button onClick={() => setShowFiltersModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">‹</button>
+            </div>
+
+            {/* Dificultad */}
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-2">Dificultad</p>
+              <div className="flex gap-2">
+                {['Fácil', 'Media', 'Difícil'].map((v) => (
+                  <button key={v} type="button" onClick={() => setExtraFilters((f) => ({ ...f, difficulty: f.difficulty === v ? '' : v }))} className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-colors ${extraFilters.difficulty === v ? 'bg-green-600 text-white border-green-600' : 'border-gray-200 text-gray-500 hover:border-green-300 hover:text-green-600'}`}>{v}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tiempo */}
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-2">Tiempo</p>
+              <div className="flex gap-2">
+                {[['Rápido', '<20 min'], ['Normal', '20-40 min'], ['Elaborado', '+40 min']].map(([label, sub]) => (
+                  <button key={label} type="button" onClick={() => setExtraFilters((f) => ({ ...f, time: f.time === label ? '' : label }))} className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-colors flex flex-col items-center ${extraFilters.time === label ? 'bg-green-600 text-white border-green-600' : 'border-gray-200 text-gray-500 hover:border-green-300 hover:text-green-600'}`}>
+                    <span>{label}</span>
+                    <span className={`text-[10px] ${extraFilters.time === label ? 'text-green-100' : 'text-gray-400'}`}>{sub}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Dieta */}
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-2">Dieta</p>
+              <div className="flex flex-wrap gap-2">
+                {['Vegetariano', 'Vegano', 'Sin gluten', 'Sin lactosa'].map((v) => (
+                  <button key={v} type="button" onClick={() => setExtraFilters((f) => ({ ...f, diet: f.diet.includes(v) ? f.diet.filter((d) => d !== v) : [...f.diet, v] }))} className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${extraFilters.diet.includes(v) ? 'bg-green-600 text-white border-green-600' : 'border-gray-200 text-gray-500 hover:border-green-300 hover:text-green-600'}`}>{v}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Sabor */}
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-2">Sabor</p>
+              <div className="flex gap-2">
+                {['Dulce', 'Salado', 'Picante'].map((v) => (
+                  <button key={v} type="button" onClick={() => setExtraFilters((f) => ({ ...f, flavor: f.flavor === v ? '' : v }))} className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-colors ${extraFilters.flavor === v ? 'bg-green-600 text-white border-green-600' : 'border-gray-200 text-gray-500 hover:border-green-300 hover:text-green-600'}`}>{v}</button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button type="button" onClick={() => setExtraFilters({ difficulty: '', time: '', diet: [], flavor: '' })} className="flex-1 py-2 rounded-xl text-sm border border-gray-200 text-gray-500 hover:border-gray-300 transition-colors">Limpiar</button>
+              <button type="button" onClick={() => setShowFiltersModal(false)} className="flex-1 py-2 rounded-xl text-sm bg-green-600 hover:bg-green-700 text-white font-medium transition-colors">Aplicar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
