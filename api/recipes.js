@@ -30,13 +30,13 @@ export default async function handler(req, res) {
 ${requiredFilter}
 ${mealFilter}
 ${excludeFilter}
-Sugerime 3 recetas que pueda hacer. Para cada receta incluí:
+Sugiéreme 3 recetas que pueda hacer. Para cada receta incluye:
 - Nombre de la receta
 - Ingredientes que ya tengo (de la lista)
 - Ingredientes que me faltan (máximo 3, cosas básicas)
 - Pasos resumidos (máximo 4 pasos cortos)
 
-Respondé en español, en formato JSON con esta estructura exacta:
+Responde en español, en formato JSON con esta estructura exacta:
 {
   "recipes": [
     {

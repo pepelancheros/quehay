@@ -359,7 +359,7 @@ export default function Home() {
           <h1 className="text-2xl font-bold text-gray-900">¿Qué hay?</h1>
           <button onClick={handleLogout} className="text-sm text-gray-400 hover:text-gray-600">Salir</button>
         </div>
-        <p className="text-gray-500 text-sm mb-6">Todavía no tenés una despensa. Podés crear una nueva o unirte a una existente.</p>
+        <p className="text-gray-500 text-sm mb-6">Todavía no tienes una despensa. Puedes crear una nueva o unirte a una existente.</p>
 
         {setupError && (
           <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg mb-4">{setupError}</p>
@@ -487,7 +487,7 @@ export default function Home() {
                 {codeVisible && (
                   <div className="flex items-center justify-between mt-2">
                     <p className="text-lg font-mono font-bold text-green-800 tracking-widest">{pantry.inviteCode}</p>
-                    <p className="text-xs text-green-600 text-right max-w-[140px]">Compartilo para que otro usuario se una</p>
+                    <p className="text-xs text-green-600 text-right max-w-[140px]">Compártelo para que otro usuario se una</p>
                   </div>
                 )}
               </div>
@@ -503,7 +503,7 @@ export default function Home() {
                   className={`text-sm px-3 py-1 rounded-full border transition-colors ${listening ? 'bg-red-50 border-red-200 text-red-500' : 'border-gray-200 text-gray-400 hover:border-green-300 hover:text-green-600'}`}
                   title={listening ? 'Parar grabación' : 'Dictá tus ingredientes'}
                 >
-                  {listening ? '⏹ Parar' : '🎤 Dictár'}
+                  {listening ? '⏹ Parar' : '🎤 Dictar'}
                 </button>
               </div>
               {dictationError && <p className="text-xs text-red-500 mb-2">{dictationError}</p>}
@@ -531,6 +531,36 @@ export default function Home() {
                 </div>
                 {setupError && <p className="text-sm text-red-500 mt-2">{setupError}</p>}
               </form>
+            )}
+
+            {/* Lista de compras — solo desktop (en mobile aparece al final) */}
+            {pantry && (
+              <div className="hidden lg:flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <button onClick={() => setShowShopping((v) => !v)} className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-gray-700">Lista de compras ({shoppingList.length})</p>
+                    <span className={`text-gray-400 text-xl inline-block transition-transform ${showShopping ? '-rotate-90' : 'rotate-90'}`}>›</span>
+                  </button>
+                  {shoppingList.some((i) => i.checked) && (
+                    <button onClick={handleClearChecked} className="text-xs text-gray-400 hover:text-red-400 transition-colors">Limpiar tachados</button>
+                  )}
+                </div>
+                {showShopping && (
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+                    {shoppingList.map((item) => (
+                      <div key={item.id} className="flex items-center gap-3 px-4 py-3">
+                        <input type="checkbox" checked={item.checked} onChange={() => handleToggleShoppingItem(item)} className="accent-green-600 w-4 h-4 shrink-0" />
+                        <span className={`text-sm flex-1 ${item.checked ? 'line-through text-gray-400' : 'text-gray-800'}`}>{item.name}</span>
+                        <button onClick={() => handleDeleteShoppingItem(item.id)} className="text-gray-300 hover:text-red-400 transition-colors text-lg leading-none">×</button>
+                      </div>
+                    ))}
+                    <form onSubmit={handleAddShoppingManual} className="flex gap-2 px-4 py-3">
+                      <input type="text" value={shoppingInput} onChange={(e) => setShoppingInput(e.target.value)} placeholder="Añadir ítem..." className="flex-1 text-sm outline-none text-gray-700 placeholder-gray-300" />
+                      <button type="submit" disabled={!shoppingInput.trim()} className="text-green-600 hover:text-green-700 disabled:opacity-30 text-sm font-medium transition-colors">Añadir</button>
+                    </form>
+                  </div>
+                )}
+              </div>
             )}
 
           </div>{/* fin columna izquierda */}
@@ -564,7 +594,7 @@ export default function Home() {
 
             {/* Buscar receta */}
             <form onSubmit={handleSearchRecipe} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6">
-              <p className="text-sm font-medium text-gray-700 mb-3">Buscar receta</p>
+              <p className="text-sm font-medium text-gray-700 mb-3">¿Tienes una receta en mente? Búscala aquí</p>
               <div className="flex gap-2">
                 <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Ej: Pasta carbonara" className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" />
                 <button type="submit" disabled={searchLoading || !searchQuery.trim()} className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-medium px-4 rounded-lg text-sm transition-colors">
@@ -577,7 +607,7 @@ export default function Home() {
                   <p className="font-semibold text-gray-900 mb-3">{searchResult.name}</p>
                   {searchResult.have.length > 0 && (
                     <div className="mb-3">
-                      <p className="text-xs font-medium text-green-700 mb-1">Tenés</p>
+                      <p className="text-xs font-medium text-green-700 mb-1">Tienes</p>
                       <div className="flex flex-wrap gap-1">
                         {searchResult.have.map((ing, i) => <span key={i} className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">{ing}</span>)}
                       </div>
@@ -620,7 +650,7 @@ export default function Home() {
                       </button>
                     </div>
                     <div className="mb-3">
-                      <p className="text-xs font-medium text-green-700 mb-1">Tenés</p>
+                      <p className="text-xs font-medium text-green-700 mb-1">Tienes</p>
                       <div className="flex flex-wrap gap-1">
                         {recipe.have.map((ing, j) => <span key={j} className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">{ing}</span>)}
                       </div>
@@ -661,7 +691,7 @@ export default function Home() {
                       <button onClick={() => removeFavoriteRecipe(recipe.id).then(() => setFavorites((prev) => prev.filter((f) => f.id !== recipe.id)))} className="text-xl leading-none ml-2 shrink-0 text-yellow-400" title="Quitar de favoritos">★</button>
                     </div>
                     <div className="mb-3">
-                      <p className="text-xs font-medium text-green-700 mb-1">Tenés</p>
+                      <p className="text-xs font-medium text-green-700 mb-1">Tienes</p>
                       <div className="flex flex-wrap gap-1">
                         {recipe.have.map((ing, j) => <span key={j} className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">{ing}</span>)}
                       </div>
@@ -687,9 +717,9 @@ export default function Home() {
 
           </div>{/* fin columna derecha */}
 
-          {/* Lista de compras — al final en mobile (orden 3), col 1 fila 2 en desktop */}
+          {/* Lista de compras — solo mobile, al final */}
           {pantry && (
-            <div className="flex flex-col gap-4 lg:col-start-1">
+            <div className="flex flex-col gap-4 lg:hidden">
               <div className="flex items-center justify-between">
                 <button onClick={() => setShowShopping((v) => !v)} className="flex items-center gap-2">
                   <p className="text-sm font-medium text-gray-700">Lista de compras ({shoppingList.length})</p>

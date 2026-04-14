@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   const prompt = `Quiero hacer "${recipeName}".
 ${ingredientList ? `Tengo estos ingredientes en mi despensa: ${ingredientList}.` : 'No tengo ingredientes en mi despensa.'}
 
-Respondé en español con esta estructura JSON exacta:
+Responde en español con esta estructura JSON exacta:
 {
   "name": "nombre exacto o corregido de la receta",
   "have": ["ingredientes de la receta que ya tengo"],
